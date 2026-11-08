@@ -14,7 +14,7 @@ resources:
 # Versões em produção: o CI atualiza as tags daqui (kustomize edit set image) a cada build
 images:
 - name: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-api
-  newTag: sha-ea1d7b8
+  newTag: "2.0"
 - name: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-front
   newTag: sha-ea1d7b8
 - name: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-worker

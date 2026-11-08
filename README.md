@@ -91,7 +91,9 @@ $(terraform output -raw configure_kubectl)
 kubectl -n argocd get applications -w
 ```
 
-**6. Conferir:** `./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br`
+**6. Rollout por commit.** O item B7 exige 2 revisões da `store-api`, e um cluster novo tem só uma. Trocar o `newTag` da `store-api` em [`k8s/fiap-store/kustomization.yaml`](k8s/fiap-store/kustomization.yaml) (ex.: `"1.0"` ↔ `"2.0"`), fazer commit e push.
+
+**7. Conferir:** `./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br`
 
 ### Acessos
 
