@@ -1,4 +1,4 @@
-# Namespace e Secret cloudflare-api-token criados pelo Terraform (terraform/05-secrets.tf)
+# Namespace e Secret cloudflare-api-token criados pelo Terraform (terraform/04-secrets.tf)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
