@@ -1,0 +1,13 @@
+# Prometheus coleta /metrics da store-api (pedidos criados, CPU e memória do processo)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: store-api
+  namespace: store-prod
+spec:
+  selector:
+    matchLabels: { app: store-api }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 92.13.1
+    helm:
+      valuesObject:
+        alertmanager: { enabled: false }
+        nodeExporter: { enabled: false } # o DaemonSet node-exporter fica em k8s/monitoring
+        kubeEtcd: { enabled: false } # control plane gerenciado pela AWS: não é alcançável
+        kubeScheduler: { enabled: false }
+        kubeControllerManager: { enabled: false }
+        prometheus:
+          prometheusSpec:
+            retention: 1d
+            serviceMonitorSelectorNilUsesHelmValues: false # lê ServiceMonitors de qualquer namespace
+            resources:
+              requests: { cpu: 100m, memory: 512Mi }
+              limits: { memory: 1Gi }
+        grafana:
+          defaultDashboardsEnabled: false # só o dashboard da FIAP Store
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 00-node-exporter.yaml
+  - 10-servicemonitor.yaml
+configMapGenerator: # o sidecar do Grafana carrega todo ConfigMap com o label grafana_dashboard
+  - name: fiap-store-dashboard
+    namespace: monitoring
+    files: [fiap-store.json]
+    options:
+      disableNameSuffixHash: true
+      labels: { grafana_dashboard: "1" }

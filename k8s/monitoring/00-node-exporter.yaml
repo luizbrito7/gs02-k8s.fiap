@@ -1,9 +1,4 @@
 # DaemonSet de métricas: um Pod por nó expondo métricas do host para o Prometheus
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: monitoring
----
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
