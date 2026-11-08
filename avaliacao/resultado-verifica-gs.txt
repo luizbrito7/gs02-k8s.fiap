@@ -1,0 +1,90 @@
+===================================================================================
+ FIAP Store - Global Solution - verificacao automatica
+ Data:     08/11/2026 13:41:23
+ Contexto: arn:aws:eks:us-east-1:345843269906:cluster/eks-gs-lab
+ Servidor: https://74DB323EEEDC2FF0B5EEF6471A260AC1.gr7.us-east-1.eks.amazonaws.com
+ Conta AWS (credenciais atuais): 345843269906
+===================================================================================
+
+A. Cluster e imagens (cap. 2 e 6)
+  [OK]   A1   Cluster EKS com 3+ nos prontos em 2+ zonas                      3/3 
+         -> EKS: sim | nos prontos: 5 | zonas: 3
+  [OK]   A2   store-api, store-worker e store-front com imagens do ECR        3/3 
+         -> 3 de 3 imagens vem do ECR | registro: 345843269906.dkr.ecr.us-east-1.amazonaws.com
+  [OK]   A3   Nenhuma imagem com tag latest ou sem tag                        2/2 
+
+B. Workloads e alta disponibilidade (cap. 3 e 4)
+  [OK]   B1   store-api com 3+ replicas prontas                               2/2 
+         -> replicas prontas: 3
+  [OK]   B2   store-api: readiness em /ready e liveness em /health            2/2 
+         -> readiness: /ready | liveness: /health
+  [OK]   B3   requests e limits de CPU e memoria nos 3 Deployments            2/2 
+  [OK]   B4   Replicas da store-api em 2+ zonas de disponibilidade            3/3 
+         -> zonas: us-east-1b us-east-1c 
+  [OK]   B5   HPA da store-api: minimo 3 e metrica de CPU sendo lida          3/3 
+         -> alvo: store-api | min: 3 | CPU atual: 4%
+  [OK]   B6   PodDisruptionBudget protegendo a store-api                      2/2 
+         -> minAvailable: 2 | maxUnavailable: -
+  [OK]   B7   Rolling update com maxUnavailable 0 e 2+ revisoes               2/2 
+         -> maxUnavailable: 0 | ReplicaSets: 2
+
+C. Rede e namespaces (cap. 5)
+  [OK]   C1   Namespaces store-prod e store-data                              1/1 
+  [OK]   C2   store-db e store-redis so com Services internos                 2/2 
+  [OK]   C3   Ingress store-ingress: /api -> store-api e / -> store-front     3/3 
+         -> rotas: /api store-api;/ store-front;
+  [OK]   C4   TLS no Ingress e loja respondendo em HTTPS                      2/2 
+         -> secret: store-tls (kubernetes.io/tls) | GET https://loja.luizbrito6.com.br/api/produtos -> 200
+  [OK]   C5   NetworkPolicy que nega toda entrada em store-data               2/2 
+         -> politica: deny-all-ingress
+  [OK]   C6   NetworkPolicy efetiva: front NAO alcanca o banco; api alcanca   2/2 
+         -> front->db: bloqueado | api->db: conecta
+  [OK]   C7   ResourceQuota e LimitRange em store-prod                        2/2 
+         -> ResourceQuota: 1 | LimitRange: 1
+
+D. Dados, configuracao e daemons (cap. 7)
+  [OK]   D1   StatefulSet store-db pronto com PVC Bound                       3/3 
+         -> prontas: 1 | PVC: data-store-db-0|Bound|gp3
+  [OK]   D2   Volume do banco provisionado pelo driver EBS CSI                1/1 
+         -> StorageClass: gp3 | provisioner: ebs.csi.aws.com
+  [OK]   D3   ConfigMap store-api-config usado pela store-api                 2/2 
+         -> ConfigMaps referenciados: store-api-config 
+  [OK]   D4   Downward API: nome do Pod, namespace e no na store-api          2/2 
+         -> campos: metadata.name metadata.namespace spec.nodeName
+  [OK]   D5   DaemonSet proprio com um Pod pronto em cada no                  3/3 
+         -> DaemonSets: monitoring/node-exporter 
+  [OK]   D6   Redis store-redis pronto                                        1/1 
+
+E. Jobs e Secrets (cap. 8)
+  [OK]   E1   Job db-migrate concluido                                        2/2 
+         -> execucoes bem-sucedidas: 1
+  [OK]   E2   CronJob store-report com execucao bem-sucedida                  3/3 
+         -> agenda: */15 * * * * | ultimo sucesso: 2026-11-08T16:30:06Z
+  [OK]   E3   Senha do banco vinda do Secret store-db-credentials             3/3 
+         -> Secrets referenciados: store-db-credentials 
+
+F. RBAC e seguranca (cap. 9 e 10)
+  [OK]   F1   store-api: ServiceAccount propria, le nodes e NAO le Secrets    3/3 
+         -> SA: store-api | get nodes: yes | list secrets: no
+  [OK]   F2   Token da API desligado em store-front e store-worker            2/2 
+  [OK]   F3   Grupo fiap:devs: le Pods e logs; sem delete, Secrets ou exec    3/3 
+         -> list pods: yes | logs: yes | delete: no | secrets: no | exec: no
+  [OK]   F4   Pod Security restricted (enforce) em store-prod                 3/3 
+         -> enforce: restricted
+  [OK]   F5   securityContext completo nos 3 Deployments                      3/3 
+
+G. Serverless e GitOps (cap. 8 e 11)
+  [OK]   G1   KEDA: store-worker escala a partir de zero                      4/4 
+         -> alvo: store-worker | min: 0 | trigger: redis | pronto: True
+  [OK]   G2   Argo CD: Application Synced + Healthy com prune e selfHeal      4/4 
+         -> cert-manager|Synced|Healthy|true|true;external-dns|Synced|Healthy|true|true;fiap-store|Synced|Healthy|true|true;
+
+===================================================================================
+ Pontuacao automatica: 80 / 80
+
+ Avaliados pelo professor na demonstracao:
+   M1 (2 pts)  README com passos para criar e destruir o ambiente
+   M2 (2 pts)  Nenhum segredo no repositorio Git (todos os branches)
+   M3 (1 pt)   Relatorio de scan (Trivy) das 3 imagens, sem CRITICAL sem justificativa
+   Desafios ao vivo (15 pts): 3 desafios x 5 pts
+===================================================================================
