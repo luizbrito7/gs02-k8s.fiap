@@ -65,6 +65,7 @@ kind: Service
 metadata:
   name: store-api
   namespace: store-prod
+  labels: { app: store-api } # o ServiceMonitor encontra o Service por este label
 spec:
   selector: { app: store-api }
   ports:
