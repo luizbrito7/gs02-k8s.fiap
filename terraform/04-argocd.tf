@@ -15,7 +15,7 @@ resource "helm_release" "argocd" {
         type                     = "LoadBalancer"
         loadBalancerSourceRanges = ["${chomp(data.http.my_ip.response_body)}/32"]
         annotations = {
-          "external-dns.alpha.kubernetes.io/hostname" = "argocd.${local.domain}"
+          "external-dns.kubernetes.io/hostname" = "argocd.${local.domain}" # prefixo sem "alpha" desde a v0.22
         }
       }
     }
