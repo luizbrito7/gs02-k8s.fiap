@@ -25,6 +25,7 @@ spec:
         sources: [service, ingress]
         extraArgs:
           zone-id-filter: 21ebc885900ae67aefef547a9c60ead7   # token limitado a esta zona
+          cloudflare-proxied: true                           # HTTPS na borda da Cloudflare
   destination:
     server: https://kubernetes.default.svc
     namespace: external-dns

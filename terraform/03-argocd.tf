@@ -1,4 +1,9 @@
-# Argo CD exposto por LoadBalancer liberado só para o IP de quem aplica.
+# Faixas IPv4 da borda da Cloudflare: únicas origens aceitas no LB (o acesso passa pelo proxy)
+data "http" "cloudflare_ips" {
+  url = "https://api.cloudflare.com/client/v4/ips"
+}
+
+# Argo CD exposto por LoadBalancer atrás do proxy da Cloudflare (HTTPS na borda).
 # O external-dns (instalado pelo próprio Argo) cria argocd.<domínio> a partir da annotation.
 resource "helm_release" "argocd" {
   name             = "argocd"
@@ -12,7 +17,7 @@ resource "helm_release" "argocd" {
     server = {
       service = {
         type                     = "LoadBalancer"
-        loadBalancerSourceRanges = ["${chomp(data.http.my_ip.response_body)}/32"]
+        loadBalancerSourceRanges = jsondecode(data.http.cloudflare_ips.response_body).result.ipv4_cidrs
         annotations = {
           "external-dns.kubernetes.io/hostname" = "argocd.${local.domain}"
         }
