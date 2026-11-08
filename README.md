@@ -112,7 +112,8 @@ A ordem importa: balanceadores e volumes são criados pelo Kubernetes, não pelo
 # 1. Apagar a Application root: o finalizer apaga em cascata as Applications e tudo que elas criaram
 kubectl -n argocd delete application root
 
-# 2. Esperar os volumes EBS e o NLB do Traefik sumirem
+# 2. Apagar o volume do banco (o StatefulSet mantém o PVC de propósito) e esperar EBS e NLB do Traefik sumirem
+kubectl -n store-data delete pvc --all
 kubectl get pv                                         # até ficar vazio
 kubectl get svc -A | grep LoadBalancer                 # só pode restar o argocd-server
 
