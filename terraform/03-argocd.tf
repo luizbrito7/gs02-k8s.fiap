@@ -19,7 +19,8 @@ resource "helm_release" "argocd" {
         type                     = "LoadBalancer"
         loadBalancerSourceRanges = jsondecode(data.http.cloudflare_ips.response_body).result.ipv4_cidrs
         annotations = {
-          "external-dns.kubernetes.io/hostname" = "argocd.${local.domain}"
+          "external-dns.kubernetes.io/hostname"               = "argocd.${local.domain}"
+          "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb" # NLB em vez do Classic LB padrão
         }
       }
     }

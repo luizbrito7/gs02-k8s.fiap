@@ -14,6 +14,9 @@ spec:
       valuesObject:
         deployment:
           replicas: 2
+        service:
+          annotations: # NLB em vez do Classic LB padrão
+            service.beta.kubernetes.io/aws-load-balancer-type: nlb
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik

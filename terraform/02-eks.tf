@@ -42,10 +42,10 @@ module "eks" {
 
   eks_managed_node_groups = {
     default = {
-      instance_types = ["t3.medium"] # máx. 17 Pods por nó: o projeto precisa de 4 nós
-      min_size       = 4
-      desired_size   = 4
-      max_size       = 5
+      instance_types = ["t3.medium"] # máx. 17 Pods por nó: 5 nós dão folga para drenar um deles
+      min_size       = 5
+      desired_size   = 5
+      max_size       = 6
     }
   }
 }
