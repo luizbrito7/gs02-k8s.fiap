@@ -19,7 +19,7 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: store-front
-          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-front:1.1
+          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-front:1.2
           ports:
             - { name: http, containerPort: 8080 }
           readinessProbe:
