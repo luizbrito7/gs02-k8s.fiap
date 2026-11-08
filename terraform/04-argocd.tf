@@ -1,4 +1,5 @@
 # Argo CD exposto por LoadBalancer liberado só para o IP de quem aplica.
+
 # O external-dns (instalado pelo próprio Argo) cria argocd.<domínio> a partir da annotation.
 resource "helm_release" "argocd" {
   name             = "argocd"
