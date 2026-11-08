@@ -34,6 +34,12 @@ spec:
     metadata:
       labels: { app: store-db }
     spec:
+      securityContext: # usuário postgres da imagem alpine; fsGroup dá escrita no volume EBS
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: postgres
           image: postgres:16.15-alpine
@@ -53,6 +59,9 @@ spec:
           resources:
             requests: { cpu: 100m, memory: 256Mi }
             limits: { cpu: 500m, memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
           volumeMounts:
             - { name: data, mountPath: /var/lib/postgresql/data }
   volumeClaimTemplates:
@@ -87,6 +96,11 @@ spec:
     metadata:
       labels: { app: store-redis }
     spec:
+      securityContext: # usuário redis da imagem alpine
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: redis
           image: redis:7.4.12-alpine
@@ -98,6 +112,9 @@ spec:
           resources:
             requests: { cpu: 50m, memory: 64Mi }
             limits: { cpu: 200m, memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
 ---
 # Nega toda entrada em store-data; as políticas abaixo liberam só o necessário
 apiVersion: networking.k8s.io/v1

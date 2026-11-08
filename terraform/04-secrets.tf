@@ -13,7 +13,7 @@ resource "random_password" "db" {
 resource "kubernetes_namespace_v1" "this" {
   for_each = {
     store-prod   = { "pod-security.kubernetes.io/enforce" = "restricted" }
-    store-data   = { "pod-security.kubernetes.io/enforce" = "baseline" }
+    store-data   = { "pod-security.kubernetes.io/enforce" = "restricted" }
     external-dns = {}
     cert-manager = {}
   }
