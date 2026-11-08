@@ -1,0 +1,21 @@
+# Recursos de plataforma que dependem dos CRDs acima (ex.: ClusterIssuer)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]   # apagar a Application apaga o que ela criou
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/luizbrito7/gs02-k8s.fiap.git
+    targetRevision: main
+    path: k8s/platform
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [SkipDryRunOnMissingResource=true]
+    retry:                       # espera o cert-manager instalar os CRDs
+      limit: 10
+      backoff: { duration: 30s, factor: 2, maxDuration: 5m }

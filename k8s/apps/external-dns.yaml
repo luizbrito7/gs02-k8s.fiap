@@ -1,0 +1,30 @@
+# Namespace e Secret cloudflare-api-token criados pelo Terraform (terraform/05-secrets.tf)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-dns
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]   # apagar a Application apaga o que ela criou
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/external-dns/
+    chart: external-dns
+    targetRevision: 1.23.0
+    helm:
+      valuesObject:
+        provider:
+          name: cloudflare
+        env:
+          - name: CF_API_TOKEN
+            valueFrom:
+              secretKeyRef: { name: cloudflare-api-token, key: api-token }
+        domainFilters: [luizbrito6.com.br]
+        policy: sync              # remove os registros quando o recurso some
+        txtOwnerId: eks-gs-lab    # só mexe nos registros criados por este cluster
+        sources: [service, ingress]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-dns
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
