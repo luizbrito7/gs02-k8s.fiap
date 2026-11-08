@@ -23,13 +23,6 @@ locals {
   repos = toset(["store-api", "store-worker", "store-front"])
 }
 
-# repositórios já existentes, criados antes no state principal
-import {
-  for_each = local.repos
-  to       = aws_ecr_repository.this[each.key]
-  id       = each.key
-}
-
 resource "aws_ecr_repository" "this" {
   for_each = local.repos
 

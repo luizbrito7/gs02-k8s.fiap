@@ -50,7 +50,7 @@ module "eks" {
   }
 }
 
-# role IAM só do service account do EBS CSI (os nós mantêm IMDS hop limit 1)
+# role IAM só do service account do EBS CSI
 module "ebs_csi_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
   version = "~> 2.10"

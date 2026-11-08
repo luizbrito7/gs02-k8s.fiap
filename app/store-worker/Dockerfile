@@ -1,5 +1,3 @@
-# Base Chainguard (Wolfi): sem shell e sem gerenciador de pacotes na imagem final,
-# para zerar vulnerabilidades no scan do trivy.
 # ---------- estagio 1: dependencias ----------
 FROM cgr.dev/chainguard/python:latest-dev AS build
 WORKDIR /app

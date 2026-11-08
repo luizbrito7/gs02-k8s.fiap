@@ -1,5 +1,4 @@
 # Argo CD exposto por LoadBalancer liberado só para o IP de quem aplica.
-
 # O external-dns (instalado pelo próprio Argo) cria argocd.<domínio> a partir da annotation.
 resource "helm_release" "argocd" {
   name             = "argocd"
@@ -15,7 +14,7 @@ resource "helm_release" "argocd" {
         type                     = "LoadBalancer"
         loadBalancerSourceRanges = ["${chomp(data.http.my_ip.response_body)}/32"]
         annotations = {
-          "external-dns.kubernetes.io/hostname" = "argocd.${local.domain}" # prefixo sem "alpha" desde a v0.22
+          "external-dns.kubernetes.io/hostname" = "argocd.${local.domain}"
         }
       }
     }
