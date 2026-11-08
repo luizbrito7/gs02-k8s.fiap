@@ -33,7 +33,7 @@ jobs:
       - name: build
         run: |
           echo "IMAGE=$REGISTRY/${{ matrix.image }}:sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
-          docker build -t "$REGISTRY/${{ matrix.image }}:sha-${GITHUB_SHA::7}" app/${{ matrix.image }}
+          docker build --build-arg APP_VERSION=sha-${GITHUB_SHA::7} -t "$REGISTRY/${{ matrix.image }}:sha-${GITHUB_SHA::7}" app/${{ matrix.image }}
 
       - name: trivy (falha com CRITICAL ou HIGH)
         uses: aquasecurity/trivy-action@v0.36.0
