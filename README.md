@@ -8,7 +8,7 @@ A FIAP Store roda num cluster **Amazon EKS** criado por **Terraform** e entregue
 |---|---|
 | Loja | https://loja.luizbrito6.com.br |
 | Argo CD | https://argocd.luizbrito6.com.br/applications/argocd/fiap-store |
-| Vídeo (3 min) | [docs/demo.mp4](docs/demo.mp4): Argo CD, loja processando pedidos, APIs, kubectl, Grafana e 80/80 |
+| Vídeo (3 min) | https://youtu.be/yPL22E25WOE — Argo CD, loja processando pedidos, APIs, kubectl, Grafana e 80/80 |
 | Correção | `./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br` → **80/80** ([resultado](avaliacao/resultado-verifica-gs.txt)) |
 
 ## Arquiteturas
@@ -31,7 +31,7 @@ Cada contexto do laboratório tem o seu diagrama, junto do código que ele descr
 | [`app/`](app/) | código e Dockerfiles da FIAP Store |
 | [`.github/workflows/`](.github/workflows/) | CI: build, trivy e push das imagens no ECR |
 | [`avaliacao/`](avaliacao/) | script de correção, [resultado da última execução](avaliacao/resultado-verifica-gs.txt) e relatórios do trivy |
-| [`docs/`](docs/) | enunciado, diagramas e vídeo de demonstração |
+| [`docs/`](docs/) | enunciado e diagramas |
 
 > **Terraform no lugar do `cluster.yaml`:** o enunciado sugere `eksctl`. Usamos Terraform (módulos oficiais `terraform-aws-modules`) para criar rede, cluster, Argo CD e Secrets num único `apply`, e destruir tudo num único `destroy`.
 
