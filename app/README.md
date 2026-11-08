@@ -13,29 +13,7 @@ cluster, manifestos, rede, armazenamento, segurança, escalonamento e entrega po
 
 ## Arquitetura
 
-```
-                    Internet (HTTPS)
-                          |
-                    [ Ingress ]  -------------------------- namespace store-prod
-                     /        \
-              /api/...          /
-                 |               |
-           [ store-api ]   [ store-front ]
-             |      |
-   grava pedido   enfileira o ID
-             |      |
-             |      v
-             |  [ Redis: lista "pedidos" ] <----- KEDA observa o tamanho da fila
-             |      |
-             |      v
-             |  [ store-worker ]  0..N replicas (escala a zero)
-             |      |
-             v      v
-        [ PostgreSQL store-db ] --------------------------- namespace store-data
-             ^
-             |
-   [ db-migrate (Job) ]   [ store-report (CronJob) ]
-```
+<p align="center"><img src="../docs/architecture/app.gif" alt="FIAP Store: Cloudflare, Traefik, store-front, store-api, worker com KEDA, Redis e PostgreSQL em namespaces separados" /></p>
 
 | Componente | Imagem | O que faz |
 |---|---|---|
