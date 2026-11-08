@@ -8,7 +8,7 @@ A FIAP Store roda num cluster **Amazon EKS** criado por **Terraform** e entregue
 |---|---|
 | Loja | https://loja.luizbrito6.com.br |
 | Argo CD | https://argocd.luizbrito6.com.br/applications/argocd/fiap-store |
-| Correção | `./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br` → **80/80** |
+| Correção | `./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br` → **80/80** ([resultado](avaliacao/resultado-verifica-gs.txt)) |
 
 ## Arquiteturas
 
@@ -24,112 +24,27 @@ Cada contexto do laboratório tem o seu diagrama, junto do código que ele descr
 
 | Pasta | Conteúdo |
 |---|---|
-| [`terraform/`](terraform/) | VPC, EKS, Argo CD e Secrets |
+| [`terraform/`](terraform/) | VPC, EKS, Argo CD e Secrets, com o [passo a passo do ambiente](terraform/README.md) |
 | [`terraform/ecr/`](terraform/ecr/) | repositórios ECR e role do GitHub Actions (state próprio: sobrevivem ao destroy do cluster) |
 | [`k8s/`](k8s/) | tudo que o Argo CD aplica no cluster |
 | [`app/`](app/) | código e Dockerfiles da FIAP Store |
 | [`.github/workflows/`](.github/workflows/) | CI: build, trivy e push das imagens no ECR |
-| [`avaliacao/`](avaliacao/) | script de correção e relatórios do trivy |
+| [`avaliacao/`](avaliacao/) | script de correção, [resultado da última execução](avaliacao/resultado-verifica-gs.txt) e relatórios do trivy |
 | [`docs/`](docs/) | enunciado e diagramas |
 
 > **Terraform no lugar do `cluster.yaml`:** o enunciado sugere `eksctl`. Usamos Terraform (módulos oficiais `terraform-aws-modules`) para criar rede, cluster, Argo CD e Secrets num único `apply`, e destruir tudo num único `destroy`.
 
-## Pré-requisitos
+## Ambiente
 
-- AWS CLI com o profile `delta`, Terraform ≥ 1.16, kubectl e Docker.
-- Domínio na Cloudflare, com SSL/TLS no modo **Full** e um API token com `Zone:DNS:Edit` e `Zone:Zone:Read` na zona.
+Criar do zero é um `terraform apply`: o Argo CD aplica o resto sozinho. O passo a passo completo, com Secrets, acessos, ordem de destruição e problemas conhecidos, está em **[terraform/README.md](terraform/README.md)**.
 
-## Criar o ambiente do zero
-
-**1. ECR e role do CI** (só na primeira vez; não é destruído junto com o cluster):
-
-```bash
-cd terraform/ecr && terraform init && terraform apply
-```
-
-**2. Imagens.** A cada push em `app/`, o CI ([`images.yml`](.github/workflows/images.yml)) faz:
-
-1. build das 3 imagens e scan do trivy (falha com `CRITICAL` ou `HIGH`);
-2. push no ECR com a tag `sha-<commit>`, autenticando por OIDC (credencial temporária da role `github-ecr-gs-lab`, sem chave guardada no GitHub);
-3. commit das tags novas em [`k8s/fiap-store/kustomization.yaml`](k8s/fiap-store/kustomization.yaml): o Argo CD vê o commit e faz o rollout.
-
-Rollback é um commit voltando a tag nesse arquivo. As versões fixas `1.0`, `2.0` e `1.2` foram publicadas uma vez à mão (os repositórios são imutáveis):
-
-```bash
-REGISTRY=345843269906.dkr.ecr.us-east-1.amazonaws.com
-aws ecr get-login-password --profile delta | docker login -u AWS --password-stdin $REGISTRY
-docker build -t $REGISTRY/store-api:1.0 app/store-api && docker push $REGISTRY/store-api:1.0
-docker build --build-arg APP_VERSION=2.0 -t $REGISTRY/store-api:2.0 app/store-api && docker push $REGISTRY/store-api:2.0
-docker build -t $REGISTRY/store-worker:1.0 app/store-worker && docker push $REGISTRY/store-worker:1.0
-docker build -t $REGISTRY/store-front:1.2 app/store-front && docker push $REGISTRY/store-front:1.2
-```
-
-**3. Secrets.** Nenhum valor vai para o Git. O token da Cloudflare fica num arquivo ignorado pelo Git:
-
-```bash
-echo 'cloudflare_api_token = "<token>"' > terraform/terraform.tfvars
-```
-
-O Terraform cria no cluster:
-
-| Secret | Namespaces | Origem |
-|---|---|---|
-| `store-db-credentials` (chave `password`) | `store-prod`, `store-data` | senha aleatória (`random_password`) |
-| `cloudflare-api-token` (chave `api-token`) | `external-dns`, `cert-manager` | `terraform.tfvars` |
-| `store-tls` | `store-prod` | emitido pelo cert-manager (Let's Encrypt, DNS-01) |
-
-**4. Cluster, Argo CD e Secrets** (~20 min):
-
-```bash
-cd terraform && terraform init && terraform apply
-$(terraform output -raw configure_kubectl)
-```
-
-**5. GitOps.** A partir daqui o Argo CD aplica sozinho tudo que está em `k8s/`. Acompanhar até todas ficarem `Synced` e `Healthy`:
-
-```bash
-kubectl -n argocd get applications -w
-```
-
-**6. Rollout por commit.** O item B7 exige 2 revisões da `store-api`, e um cluster novo tem só uma. Trocar o `newTag` da `store-api` em [`k8s/fiap-store/kustomization.yaml`](k8s/fiap-store/kustomization.yaml) (ex.: `"1.0"` ↔ `"2.0"`), fazer commit e push.
-
-**7. Conferir:** `./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br`
-
-### Acessos
-
-```bash
-# Argo CD: usuário admin
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
-
-# Grafana (dashboard "FIAP Store"): http://localhost:3000, usuário admin
-kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d
-kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
-```
-
-## Destruir tudo
-
-A ordem importa: balanceadores e volumes são criados pelo Kubernetes, não pelo Terraform. Se o cluster sumir antes, eles ficam órfãos (e cobrando).
-
-```bash
-# 1. Apagar a Application root: o finalizer apaga em cascata as Applications e tudo que elas criaram
-kubectl -n argocd delete application root
-
-# 2. Apagar o volume do banco (o StatefulSet mantém o PVC de propósito) e esperar EBS e NLB do Traefik sumirem
-kubectl -n store-data delete pvc --all
-kubectl get pv                                         # até ficar vazio
-kubectl get svc -A | grep LoadBalancer                 # só pode restar o argocd-server
-
-# 3. Remover o Argo CD (leva o NLB dele) e depois o resto
-cd terraform
-terraform destroy -target=helm_release.argocd
-terraform destroy
-
-# 4. Conferir que não sobrou nada
-aws elbv2 describe-load-balancers --profile delta --query 'LoadBalancers[].LoadBalancerName'
-aws ec2 describe-volumes --profile delta --filters Name=tag-key,Values=kubernetes.io/created-for/pvc/name --query 'Volumes[].VolumeId'
-```
-
-O ECR fica (state separado). Para apagá-lo também, no fim do semestre: `cd terraform/ecr && terraform destroy`.
+| Etapa | Comando |
+|---|---|
+| ECR e role do CI (primeira vez) | `cd terraform/ecr && terraform apply` |
+| Rede, EKS, Argo CD e Secrets | `cd terraform && terraform apply` |
+| GitOps | `kubectl -n argocd get applications -w` até as 9 ficarem `Synced`/`Healthy` |
+| Conferir | `AWS_PROFILE=delta ./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br` |
+| Destruir | apagar a Application `root`, o PVC do banco e depois `terraform destroy` ([ordem completa](terraform/README.md#destruir)) |
 
 ## Extras
 
