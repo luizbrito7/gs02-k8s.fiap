@@ -1,6 +1,5 @@
-# Nginx que roda como usuario nao-root (UID 101) e escuta na porta 8080.
-# Com readOnlyRootFilesystem no Kubernetes, monte um emptyDir em /tmp:
-# e onde este nginx grava pid e arquivos temporarios.
-FROM nginxinc/nginx-unprivileged:1.28-alpine
+# Nginx Chainguard (Wolfi): roda como nao-root (UID 65532), escuta na porta 8080
+# e nao tem shell nem gerenciador de pacotes, para zerar vulnerabilidades no trivy.
+FROM cgr.dev/chainguard/nginx:latest
 COPY html/ /usr/share/nginx/html/
 EXPOSE 8080
