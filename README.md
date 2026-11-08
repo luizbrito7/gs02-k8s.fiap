@@ -47,7 +47,13 @@ Cada contexto do laboratório tem o seu diagrama, junto do código que ele descr
 cd terraform/ecr && terraform init && terraform apply
 ```
 
-**2. Imagens.** O CI publica a cada push em `app/` (tag `sha-<commit>`). As tags fixas usadas pelos manifestos foram publicadas uma vez à mão (os repositórios são imutáveis):
+**2. Imagens.** A cada push em `app/`, o CI ([`images.yml`](.github/workflows/images.yml)) faz:
+
+1. build das 3 imagens e scan do trivy (falha com `CRITICAL` ou `HIGH`);
+2. push no ECR com a tag `sha-<commit>`, autenticando por OIDC (credencial temporária da role `github-ecr-gs-lab`, sem chave guardada no GitHub);
+3. commit das tags novas em [`k8s/fiap-store/kustomization.yaml`](k8s/fiap-store/kustomization.yaml): o Argo CD vê o commit e faz o rollout.
+
+Rollback é um commit voltando a tag nesse arquivo. As versões fixas `1.0`, `2.0` e `1.2` foram publicadas uma vez à mão (os repositórios são imutáveis):
 
 ```bash
 REGISTRY=345843269906.dkr.ecr.us-east-1.amazonaws.com

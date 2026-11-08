@@ -1,10 +1,13 @@
-# Roda depois do banco (wave 1) e antes da API (wave 2); idempotente
+# Hook de Sync: a cada deploy o Job é recriado com a imagem nova (template de Job é imutável).
+# Roda depois do banco (wave 1) e antes da API (wave 2); a migração é idempotente.
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: db-migrate
   namespace: store-prod
   annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
     argocd.argoproj.io/sync-wave: "1"
 spec:
   backoffLimit: 4

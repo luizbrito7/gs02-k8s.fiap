@@ -45,3 +45,28 @@ jobs:
 
       - name: push
         run: docker push "$IMAGE"
+
+  # Grava as tags novas no Git: o Argo CD vê o commit e faz o rollout
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency: deploy # um commit de deploy por vez
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: atualiza as tags no kustomization
+        working-directory: k8s/fiap-store
+        run: |
+          TAG=sha-${GITHUB_SHA::7}
+          for img in store-api store-worker store-front; do
+            kustomize edit set image $REGISTRY/$img:$TAG
+          done
+
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy: imagens sha-${GITHUB_SHA::7}"
+          git pull --rebase && git push
