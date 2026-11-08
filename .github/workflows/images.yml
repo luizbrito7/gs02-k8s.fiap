@@ -1,0 +1,47 @@
+# Constrói, escaneia (trivy) e publica as 3 imagens no ECR a cada mudança em app/
+name: images
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # token OIDC para assumir a role na AWS
+  contents: read
+
+env:
+  REGISTRY: 345843269906.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [store-api, store-worker, store-front]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::345843269906:role/github-ecr-gs-lab
+          aws-region: us-east-1
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: build
+        run: |
+          echo "IMAGE=$REGISTRY/${{ matrix.image }}:sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          docker build -t "$REGISTRY/${{ matrix.image }}:sha-${GITHUB_SHA::7}" app/${{ matrix.image }}
+
+      - name: trivy (falha com CRITICAL ou HIGH)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - name: push
+        run: docker push "$IMAGE"
