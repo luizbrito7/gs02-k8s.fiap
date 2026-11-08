@@ -23,6 +23,8 @@ spec:
         policy: sync              # remove os registros quando o recurso some
         txtOwnerId: eks-gs-lab    # só mexe nos registros criados por este cluster
         sources: [service, ingress]
+        extraArgs:
+          zone-id-filter: 21ebc885900ae67aefef547a9c60ead7   # token limitado a esta zona
   destination:
     server: https://kubernetes.default.svc
     namespace: external-dns
