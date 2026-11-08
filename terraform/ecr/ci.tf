@@ -16,10 +16,10 @@ data "aws_iam_policy_document" "github_trust" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
-    condition { # só a branch main deste repositório
+    condition { # só a branch main deste repositório (formato "immutable subject": inclui os IDs do dono e do repo)
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:luizbrito7/gs02-k8s.fiap:ref:refs/heads/main"]
+      values   = ["repo:luizbrito7@165966404/gs02-k8s.fiap@1447601299:ref:refs/heads/main"]
     }
   }
 }
