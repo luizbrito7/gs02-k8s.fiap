@@ -110,8 +110,8 @@ O resultado da última execução está em [`avaliacao/resultado-verifica-gs.txt
 | O quê | Como |
 |---|---|
 | Loja | https://loja.luizbrito6.com.br |
-| Argo CD (usuário `admin`) | https://argocd.luizbrito6.com.br — senha: `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' \| base64 -d` |
-| Grafana (usuário `admin`, dashboard "FIAP Store") | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80` e abrir http://localhost:3000 — senha: `kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' \| base64 -d` |
+| Argo CD (usuário `admin`) | https://argocd.luizbrito6.com.br, senha: `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' \| base64 -d` |
+| Grafana (usuário `admin`, dashboard "FIAP Store") | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80` e abrir http://localhost:3000, senha: `kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' \| base64 -d` |
 
 ## Destruir
 

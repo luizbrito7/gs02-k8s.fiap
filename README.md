@@ -1,4 +1,4 @@
-<h1 align="center">GS 02 — FIAP Store no Amazon EKS</h1>
+<h1 align="center">GS 02: FIAP Store no Amazon EKS</h1>
 
 <p align="center"><img src="docs/architecture/cloud.gif" alt="Arquitetura AWS: Cloudflare, VPC com subnets públicas e privadas em 3 AZs, NLBs, NAT por AZ, EKS, EBS, ECR e GitHub Actions" /></p>
 
@@ -8,7 +8,7 @@ A FIAP Store roda num cluster **Amazon EKS** criado por **Terraform** e entregue
 |---|---|
 | Loja | https://loja.luizbrito6.com.br |
 | Argo CD | https://argocd.luizbrito6.com.br/applications/argocd/fiap-store |
-| Vídeo (3 min) | https://youtu.be/yPL22E25WOE — Argo CD, loja processando pedidos, APIs, kubectl, Grafana e 80/80 |
+| Vídeo (3 min) | https://youtu.be/yPL22E25WOE (Argo CD, loja processando pedidos, APIs, kubectl, Grafana e 80/80) |
 | Correção | `./avaliacao/verifica-gs.sh https://loja.luizbrito6.com.br` → **80/80** ([resultado](avaliacao/resultado-verifica-gs.txt)) |
 
 ## Arquiteturas
