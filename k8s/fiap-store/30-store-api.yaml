@@ -29,7 +29,7 @@ spec:
             matchLabels: { app: store-api }
       containers:
         - name: store-api
-          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-api:1.0
+          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-api:2.0
           ports:
             - { name: http, containerPort: 8000 }
           envFrom:
