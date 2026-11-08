@@ -1,0 +1,25 @@
+# Namespaces store-prod e store-data e o Secret store-db-credentials vêm do Terraform (terraform/04-secrets.tf)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: store-prod-quota
+  namespace: store-prod
+spec:
+  hard:
+    pods: "30"
+    requests.cpu: "3"
+    requests.memory: 4Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: store-prod-limits
+  namespace: store-prod
+spec:
+  limits:
+    - type: Container
+      defaultRequest: { cpu: 50m, memory: 64Mi }
+      default: { cpu: 200m, memory: 128Mi }
+      max: { cpu: "1", memory: 512Mi }

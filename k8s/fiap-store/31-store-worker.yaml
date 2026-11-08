@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-worker
+  namespace: store-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  # réplicas controladas pelo KEDA (0 a 5)
+  selector:
+    matchLabels: { app: store-worker }
+  template:
+    metadata:
+      labels: { app: store-worker }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: store-worker
+          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-worker:1.0
+          envFrom:
+            - configMapRef: { name: store-api-config }
+          env:
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: db-credentials, mountPath: /var/run/secrets/db, readOnly: true }
+      volumes:
+        - name: db-credentials
+          secret: { secretName: store-db-credentials }
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: store-worker
+  namespace: store-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  scaleTargetRef: { name: store-worker }
+  minReplicaCount: 0
+  maxReplicaCount: 5
+  triggers:
+    - type: redis
+      metadata:
+        address: store-redis.store-data.svc.cluster.local:6379
+        listName: pedidos
+        listLength: "5"

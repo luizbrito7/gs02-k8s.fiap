@@ -1,0 +1,37 @@
+# Roda depois do banco (wave 1) e antes da API (wave 2); idempotente
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: store-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels: { app: db-migrate }
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: db-migrate
+          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-api:1.0
+          command: [python, -m, app.migrate]
+          envFrom:
+            - configMapRef: { name: store-api-config }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: db-credentials, mountPath: /var/run/secrets/db, readOnly: true }
+      volumes:
+        - name: db-credentials
+          secret: { secretName: store-db-credentials }

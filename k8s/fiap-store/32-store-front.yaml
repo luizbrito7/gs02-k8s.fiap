@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-front
+  namespace: store-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: store-front }
+  template:
+    metadata:
+      labels: { app: store-front }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: store-front
+          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-front:1.1
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 64Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts: # nginx grava pid e temporários aqui
+            - { name: run, mountPath: /run }
+            - { name: tmp, mountPath: /var/lib/nginx/tmp }
+      volumes:
+        - { name: run, emptyDir: {} }
+        - { name: tmp, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-front
+  namespace: store-prod
+spec:
+  selector: { app: store-front }
+  ports:
+    - { name: http, port: 8080, targetPort: http }

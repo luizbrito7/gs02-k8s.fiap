@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: store-api
+  namespace: store-prod
+---
+# nodes é recurso de cluster: ClusterRole + ClusterRoleBinding, só get (sem Secrets)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: store-api-read-nodes
+rules:
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: store-api-read-nodes
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: store-api-read-nodes
+subjects:
+  - kind: ServiceAccount
+    name: store-api
+    namespace: store-prod
+---
+# fiap:devs: lista Pods e lê logs; sem delete, Secrets ou exec
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: devs-read-pods
+  namespace: store-prod
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: devs-read-pods
+  namespace: store-prod
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: devs-read-pods
+subjects:
+  - kind: Group
+    name: fiap:devs
+    apiGroup: rbac.authorization.k8s.io

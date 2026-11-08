@@ -1,0 +1,26 @@
+# Regra sem host: responde pelo domínio (via Cloudflare) e pelo hostname do LB do Traefik
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: store-ingress
+  namespace: store-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.kubernetes.io/hostname: loja.luizbrito6.com.br
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [loja.luizbrito6.com.br]
+      secretName: store-tls
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service: { name: store-api, port: { name: http } }
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: store-front, port: { name: http } }

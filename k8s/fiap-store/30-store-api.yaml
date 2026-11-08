@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-api
+  namespace: store-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  # réplicas controladas pelo HPA (3 a 6)
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  selector:
+    matchLabels: { app: store-api }
+  template:
+    metadata:
+      labels: { app: store-api }
+    spec:
+      serviceAccountName: store-api
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: store-api }
+      containers:
+        - name: store-api
+          image: 345843269906.dkr.ecr.us-east-1.amazonaws.com/store-api:1.0
+          ports:
+            - { name: http, containerPort: 8000 }
+          envFrom:
+            - configMapRef: { name: store-api-config }
+          env:
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: db-credentials, mountPath: /var/run/secrets/db, readOnly: true }
+      volumes:
+        - name: db-credentials
+          secret: { secretName: store-db-credentials }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-api
+  namespace: store-prod
+spec:
+  selector: { app: store-api }
+  ports:
+    - { name: http, port: 8000, targetPort: http }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: store-api
+  namespace: store-prod
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: store-api }
+  minReplicas: 3
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: store-api
+  namespace: store-prod
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: { app: store-api }

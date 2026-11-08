@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fiap-store
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]   # apagar a Application apaga o que ela criou
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/luizbrito7/gs02-k8s.fiap.git
+    targetRevision: main
+    path: k8s/fiap-store
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=false]
+    retry:
+      limit: 10
+      backoff: { duration: 30s, factor: 2, maxDuration: 5m }

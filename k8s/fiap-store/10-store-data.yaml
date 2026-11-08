@@ -1,0 +1,150 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-db
+  namespace: store-data
+spec:
+  clusterIP: None
+  selector: { app: store-db }
+  ports:
+    - { name: postgres, port: 5432 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: store-db
+  namespace: store-data
+spec:
+  serviceName: store-db
+  replicas: 1
+  selector:
+    matchLabels: { app: store-db }
+  template:
+    metadata:
+      labels: { app: store-db }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16.15-alpine
+          ports:
+            - { name: postgres, containerPort: 5432 }
+          env:
+            - { name: POSTGRES_DB, value: fiapstore }
+            - { name: POSTGRES_USER, value: fiapstore }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: store-db-credentials, key: password }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata } # o volume EBS traz lost+found na raiz
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, fiapstore, -d, fiapstore]
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: gp3
+        resources:
+          requests: { storage: 2Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-redis
+  namespace: store-data
+spec:
+  selector: { app: store-redis }
+  ports:
+    - { name: redis, port: 6379 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-redis
+  namespace: store-data
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: store-redis }
+  template:
+    metadata:
+      labels: { app: store-redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.4.12-alpine
+          ports:
+            - { name: redis, containerPort: 6379 }
+          readinessProbe:
+            tcpSocket: { port: 6379 }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+---
+# Nega toda entrada em store-data; as políticas abaixo liberam só o necessário
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: store-data
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-from-store-prod
+  namespace: store-data
+spec:
+  podSelector:
+    matchLabels: { app: store-db }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: store-prod }
+          podSelector:
+            matchExpressions:
+              - { key: app, operator: In, values: [store-api, store-worker, db-migrate, store-report] }
+      ports:
+        - { protocol: TCP, port: 5432 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis
+  namespace: store-data
+spec:
+  podSelector:
+    matchLabels: { app: store-redis }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: store-prod }
+          podSelector:
+            matchExpressions:
+              - { key: app, operator: In, values: [store-api, store-worker] }
+        - namespaceSelector: # KEDA lê o tamanho da fila para escalar o worker
+            matchLabels: { kubernetes.io/metadata.name: keda }
+      ports:
+        - { protocol: TCP, port: 6379 }
